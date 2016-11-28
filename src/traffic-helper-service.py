@@ -23,7 +23,7 @@ class TrafficClient:
         pass
 
     def getAllRoutes(self):
-        routes = r.get("%s/getRoutes.php" % host, params={"city": "barnaul"})
+        routes = r.get("%s/getRoutes.php" % host, params={"city": "barnaul"}, timeout=3)
         if routes.status_code == 200:
             return routes.json()
         else:
@@ -31,21 +31,21 @@ class TrafficClient:
 
     def getVehiclesForRoute(self, routeIds):
         vehicles = r.get("%s/getVehiclesMarkers.php" % host,
-                         params={"rids": routeIds, "lat0": 0, "lat1": 90, "lng0": 0, "lng1": 90, "city": "barnaul", "curk": 0})
+                         params={"rids": routeIds, "lat0": 0, "lat1": 90, "lng0": 0, "lng1": 90, "city": "barnaul", "curk": 0}, timeout=3)
         if vehicles.status_code == 200:
             return vehicles.json()
         else:
             raise Exception("Can't get vehicle info: %s (status %s)" % (vehicles.content, vehicles.status_code))
 
     def getVehicleForecasts(self, vehicleId, type):
-        vehicleForecasts = r.get("%s/getVehicleForecasts.php" % host, params={"vid": vehicleId, "type": type, "city": "barnaul"})
+        vehicleForecasts = r.get("%s/getVehicleForecasts.php" % host, params={"vid": vehicleId, "type": type, "city": "barnaul"}, timeout=3)
         if vehicleForecasts.status_code == 200:
             return vehicleForecasts.json()
         else:
             raise Exception("Can't get vehicle info: %s (status %s)" % (vehicleForecasts.content, vehicleForecasts.status_code))
 
     def getAllStations(self):
-        stations = r.get("%s/getStations.php" % host, params={"city": "barnaul"})
+        stations = r.get("%s/getStations.php" % host, params={"city": "barnaul"}, timeout=3)
         if stations.status_code == 200:
             return stations.json()
         else:
@@ -63,11 +63,20 @@ def getTrumInfo():
 
     for vehs in vehicles.get(u"anims", []):
         vehiclesForecasts = client.getVehicleForecasts(vehs.get(u"id"), 1)
-        for station in vehiclesForecasts:
-            if station.get(u"stid") == u"132":
-                myStation = filter(lambda x: x.get(u"stid") == u"126", vehiclesForecasts)[0]
-                result.append(u"Нужно выходить через %s минут чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
-                    station.get(u"arrt") / 60, vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))))
+        for myStation in vehiclesForecasts:
+            if myStation.get(u"stid") == u"126":
+                station = None
+                stations = filter(lambda x: x.get(u"stid") == u"132", vehiclesForecasts)
+                if stations:
+                    station = stations[0]
+                if station is not None:
+                    result.append(u"%s: Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
+                        myStation.get(u"arrt"), station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
+                        vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))))
+                else:
+                    result.append(u"%s: Трамвай №%s будет на нужной остановке через %s минут в %s" % (
+                        myStation.get(u"arrt"), vehs.get(u"gos_num"), myStation.get(u"arrt") / 60,
+                        datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))))
                 break
 
     return result
@@ -75,7 +84,7 @@ def getTrumInfo():
 
 @route("/tram_info")
 def is_avaliable():
-    return "\n".join(map(lambda x: "<pre>" + x + "</pre>", getTrumInfo()))
+    return "\n".join(map(lambda x: "<pre>" + x + "</pre>", sorted(getTrumInfo())))
 
 
 if __name__ == '__main__':
