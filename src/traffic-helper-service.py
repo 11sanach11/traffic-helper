@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config", dest="config", help='part to config.ini file, default is ../config.ini')
 parser.set_defaults(config="../config.ini")
 parser.add_argument("--port", type=int, dest="port", help='service listen port, default 12345')
-parser.set_defaults(port=14445)
+parser.set_defaults(port=12345)
 
 args = parser.parse_args()
 configFile = args.config
