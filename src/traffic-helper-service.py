@@ -70,13 +70,20 @@ def getTrumInfo():
                 if stations:
                     station = stations[0]
                 if station is not None:
-                    result.append({"time": myStation[u"arrt"],
-                                   "message": u"Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
-                                       station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
-                                       vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))})
+                    result.append(
+                        {
+                            "time": myStation[u"arrt"],
+                            "message": u"Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
+                                station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
+                                vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))
+                        })
                 else:
-                    result.append({"time": myStation[u"arrt"], "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (
-                    vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))})
+                    result.append(
+                        {
+                            "time": myStation[u"arrt"],
+                            "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (
+                            vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))
+                        })
                 break
 
     return result
