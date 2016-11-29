@@ -8,7 +8,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 import datetime
 import requests as r
-from bottle.bottle import route, run, template, post, request
+from bottle.bottle import route, run
 
 import logger
 
@@ -70,13 +70,13 @@ def getTrumInfo():
                 if stations:
                     station = stations[0]
                 if station is not None:
-                    result.append(u"%s: Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
-                        myStation.get(u"arrt"), station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
-                        vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))))
+                    result.append({"time": myStation[u"arrt"],
+                                   "message": u"Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
+                                       station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
+                                       vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))})
                 else:
-                    result.append(u"%s: Трамвай №%s будет на нужной остановке через %s минут в %s" % (
-                        myStation.get(u"arrt"), vehs.get(u"gos_num"), myStation.get(u"arrt") / 60,
-                        datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))))
+                    result.append({"time": myStation[u"arrt"], "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (
+                    vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))})
                 break
 
     return result
@@ -84,14 +84,14 @@ def getTrumInfo():
 
 @route("/tram_info")
 def is_avaliable():
-    return "\n".join(map(lambda x: "<pre>" + x + "</pre>", sorted(getTrumInfo())))
+    return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(getTrumInfo(), key=lambda x: x["time"])))
 
 
 if __name__ == '__main__':
     log.info("Start service")
     client = TrafficClient()
     try:
-        run(host="0.0.0.0", port="12345")
+        run(server="paste", host="0.0.0.0", port="12345")
     except Exception, e:
         log.error("Error while exec: %s", e.message)
         log.exception("Exeptiong while exec: ")
