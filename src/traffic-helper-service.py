@@ -8,7 +8,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 import datetime
 import requests as r
-from bottle.bottle import route, run
+from bottle.bottle import route, run, request, response, install
 
 import logger
 
@@ -74,15 +74,15 @@ def getTrumInfo():
                         {
                             "time": myStation[u"arrt"],
                             "message": u"Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
-                                station.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt")),
-                                vehs.get(u"gos_num"), datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))
+                                station.get(u"arrt") / 60, (datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt"))).strftime("%H:%M:%S"),
+                                vehs.get(u"gos_num"), (datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))).strftime("%H:%M:%S"))
                         })
                 else:
                     result.append(
                         {
                             "time": myStation[u"arrt"],
-                            "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (
-                            vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")))
+                            "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, (
+                                datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))).strftime("%H:%M:%S"))
                         })
                 break
 
@@ -90,11 +90,22 @@ def getTrumInfo():
 
 
 @route("/tram_info")
-def is_avaliable():
+def isAvaliable():
     return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(getTrumInfo(), key=lambda x: x["time"])))
 
 
+# bottle access to log file plugin
+def bootleLogger(func):
+    def wrapper(*args, **kwargs):
+        log.debug('%s %s %s %s' % (request.remote_addr, request.method, request.url, response.status))
+        req = func(*args, **kwargs)
+        return req
+
+    return wrapper
+
+
 if __name__ == '__main__':
+    install(bootleLogger)
     log.info("Start service")
     client = TrafficClient()
     try:
