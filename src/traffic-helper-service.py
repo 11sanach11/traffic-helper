@@ -6,13 +6,26 @@ import os
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
+
 import datetime
+import argparse
+
 import requests as r
 from bottle.bottle import route, run, request, response, install
 
 import logger
 
-logger.configFile = "../config.ini"
+parser = argparse.ArgumentParser()
+parser.add_argument("--config", dest="config", help='part to config.ini file, default is ../config.ini')
+parser.set_defaults(config="../config.ini")
+parser.add_argument("--port", type=int, dest="port", help='service listen port, default 12345')
+parser.set_defaults(port=14445)
+
+args = parser.parse_args()
+configFile = args.config
+port = args.port
+
+logger.configFile = configFile
 
 log = logger.getLogger("traffic-helper-service")
 host = "http://traffic22.ru/php"
@@ -109,7 +122,7 @@ if __name__ == '__main__':
     log.info("Start service")
     client = TrafficClient()
     try:
-        run(server="paste", host="0.0.0.0", port="12345")
+        run(server="paste", host="0.0.0.0", port=port)
     except Exception, e:
         log.error("Error while exec: %s", e.message)
         log.exception("Exeptiong while exec: ")
