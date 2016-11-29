@@ -119,7 +119,7 @@ def bootleLogger(func):
 
 if __name__ == '__main__':
     install(bootleLogger)
-    log.info("Start service")
+    log.info("Start service on port: %s", port)
     client = TrafficClient()
     try:
         run(server="paste", host="0.0.0.0", port=port)
