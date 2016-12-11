@@ -65,10 +65,11 @@ class TrafficClient:
             raise Exception("Can't get route info: %s (status %s)" % (stations.content, stations.status_code))
 
 
-def getTrumInfo():
+def getTrumInfo(type, myStationId, myStationEndId, goutStationId, goutStationEndId):
     result = []
     routes = client.getAllRoutes()
-    routeOfTram10OnPotok = filter(lambda x: x.get("type") == u"Тр" and x.get("tostid") == 59, routes)
+    routeOfTram10OnPotok = filter(lambda x: x.get("type") == type and (x.get("tostid") == int(myStationEndId) or x.get("tostid") == int(goutStationEndId)),
+                                  routes)
 
     routeIds = ",".join(map(lambda x: unicode(x.get("id")) + u"-1", routeOfTram10OnPotok))
 
@@ -76,35 +77,66 @@ def getTrumInfo():
 
     for vehs in vehicles.get(u"anims", []):
         vehiclesForecasts = client.getVehicleForecasts(vehs.get(u"id"), 1)
-        for myStation in vehiclesForecasts:
-            if myStation.get(u"stid") == u"126":
-                station = None
-                stations = filter(lambda x: x.get(u"stid") == u"132", vehiclesForecasts)
-                if stations:
-                    station = stations[0]
-                if station is not None:
-                    result.append(
-                        {
-                            "time": myStation[u"arrt"],
-                            "message": u"Нужно выходить через %s минут в %s чтоб успеть на трамвай №%s, который должен быть на остановке в %s" % (
-                                station.get(u"arrt") / 60, (datetime.datetime.now() + datetime.timedelta(seconds=station.get(u"arrt"))).strftime("%H:%M:%S"),
-                                vehs.get(u"gos_num"), (datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))).strftime("%H:%M:%S"))
-                        })
-                else:
-                    result.append(
-                        {
-                            "time": myStation[u"arrt"],
-                            "message": u"Трамвай №%s будет на нужной остановке через %s минут в %s" % (vehs.get(u"gos_num"), myStation.get(u"arrt") / 60, (
-                                datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt"))).strftime("%H:%M:%S"))
-                        })
-                break
+        stations = filter(lambda x: x.get(u"stid") == goutStationId or x.get(u"stid") == myStationId, vehiclesForecasts)
+        gouotStationExists = False
+        goutStation = {};
+        myStation = {};
+        if stations:
+            if len(stations) == 2:
+                gouotStationExists = True
+                goutStation = filter(lambda x: x.get(u"stid") == goutStationId, stations)[0]
+                myStation = filter(lambda x: x.get(u"stid") == myStationId, stations)[0]
+            elif len(stations) == 1:
+                neededStatidon = stations[0]
+                if neededStatidon[u"stid"] == goutStationId:
+                    gouotStationExists = True
+                    goutStation = neededStatidon
+                elif neededStatidon[u"stid"] == myStationId:
+                    myStation = neededStatidon
+            if gouotStationExists:
+                myStationTime = datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt")) if myStation.get(
+                    u"arrt") else datetime.datetime.now() + datetime.timedelta(seconds=goutStation.get(u"arrt", 0) + 300)
+                result.append(
+                    {
+                        "time": goutStation[u"arrt"],
+                        "message": u"Нужно выходить через %s минут в %s чтоб успеть на %s №%s, который должен быть на остановке в %s" % (
+                            goutStation.get(u"arrt") / 60,
+                            (datetime.datetime.now() + datetime.timedelta(seconds=goutStation.get(u"arrt", 0))).strftime("%H:%M:%S"),
+                            vehs.get(u"rtype"), vehs.get(u"rnum"), myStationTime.strftime("%H:%M:%S"))
+                    })
+            else:
+                result.append(
+                    {
+                        "time": myStation[u"arrt"],
+                        "message": u"%s №%s будет на нужной остановке через %s минут в %s" % (
+                            vehs.get(u"rtype"), vehs.get(u"rnum"), myStation.get(u"arrt", 0) / 60, (
+                                datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt", 0))).strftime("%H:%M:%S"))
+                    })
 
     return result
 
 
+@route("/tram_info/morning")
+def getTramOnMorning():
+    tramInfo = getTrumInfo(type=u"Тр", myStationId=u"126", myStationEndId=u"59", goutStationId=u"132", goutStationEndId=u"59")
+    return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(tramInfo, key=lambda x: x["time"])))
+
+
+@route("/tram_info/evening")
+def getTramOnEvening():
+    tramInfo = getTrumInfo(type=u"Тр", myStationId=u"80", myStationEndId=u"215", goutStationId=u"139", goutStationEndId=u"59")
+    return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(tramInfo, key=lambda x: x["time"])))
+
+
 @route("/tram_info")
 def isAvaliable():
-    return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(getTrumInfo(), key=lambda x: x["time"])))
+    currentHour = datetime.datetime.now().hour
+    if 6 <= currentHour and currentHour <= 11:
+        return u"Утренний трамвай: \n" + getTramOnMorning()
+    elif 15 <= currentHour and currentHour <= 22:
+        return u"Вечерний трамвай: \n" + getTramOnEvening()
+
+    return u"Неизвестное время..."
 
 
 # bottle access to log file plugin
@@ -121,6 +153,9 @@ if __name__ == '__main__':
     install(bootleLogger)
     log.info("Start service on port: %s", port)
     client = TrafficClient()
+    # print (getTramOnMorning())
+    # print (getTramOnEvening())
+    # exit()
     try:
         run(server="paste", host="0.0.0.0", port=port)
     except Exception, e:
