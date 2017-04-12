@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pip install pytelegrambotapi
+
 import os
+import threading
+import time
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -9,9 +13,11 @@ os.chdir(dname)
 
 import datetime
 import argparse
+import ConfigParser
 
 import requests as r
 from bottle.bottle import route, run, request, response, install
+import telebot
 
 import logger
 
@@ -27,8 +33,15 @@ port = args.port
 
 logger.configFile = configFile
 
+config = ConfigParser.RawConfigParser()
+config.read((configFile))
+
 log = logger.getLogger("traffic-helper-service")
 host = "http://traffic22.ru/php"
+
+telegramToken = config.get("TELEGRAM", "token")
+ownId = config.getint("TELEGRAM", "own_id")
+bot = telebot.TeleBot(telegramToken)
 
 
 class TrafficClient:
@@ -149,6 +162,37 @@ def bootleLogger(func):
     return wrapper
 
 
+@bot.message_handler(content_types=["text"])
+def repeat_all_messages(message):  # Название функции не играет никакой роли, в принципе
+    log.info(u"Request: %s", message)
+    if message.chat.id != ownId:
+        bot.send_message(message.chat.id, "Sorry, it's private party...")
+    else:
+        bot.send_message(message.chat.id, isAvaliable())
+
+
+def run_telegram():
+    try:
+        bot.polling(none_stop=True)
+    except Exception,e:
+        log.error("Error while exec: %s", e.message)
+        log.exception("Exeptiong while exec: ")
+        time.sleep(10)
+        telegram_thread = threading.Thread(target=run_telegram)
+        telegram_thread.setDaemon(True)
+        telegram_thread.start()
+
+def run_http():
+    try:
+        run(server="paste", host="0.0.0.0", port=port)
+    except Exception, e:
+        log.error("Error while exec: %s", e.message)
+        log.exception("Exeptiong while exec: ")
+        time.sleep(10)
+        http_thread = threading.Thread(target=run_http)
+        http_thread.setDaemon(True)
+        http_thread.start()
+
 if __name__ == '__main__':
     install(bootleLogger)
     log.info("Start service on port: %s", port)
@@ -156,8 +200,12 @@ if __name__ == '__main__':
     # print (getTramOnMorning())
     # print (getTramOnEvening())
     # exit()
-    try:
-        run(server="paste", host="0.0.0.0", port=port)
-    except Exception, e:
-        log.error("Error while exec: %s", e.message)
-        log.exception("Exeptiong while exec: ")
+
+    http_thread = threading.Thread(target=run_http)
+    http_thread.setDaemon(True)
+    http_thread.start()
+    telegram_thread = threading.Thread(target=run_telegram)
+    telegram_thread.setDaemon(True)
+    telegram_thread.start()
+
+time.sleep(999999999999)

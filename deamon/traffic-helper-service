@@ -12,7 +12,7 @@
 DIR=/opt/traffic-helper-service/traffic-helper
 DAEMON=$DIR/src/traffic-helper-service.py
 DAEMON_NAME=traffic-helper-service
-CONFIG_FILE=/etc/traffic-helper-service/config.ini
+CONFIG_FILE=/etc/traffic-helper-service/config_my.ini
 
 # Add any command line options for your daemon here
 DAEMON_OPTS="--config=$CONFIG_FILE"
