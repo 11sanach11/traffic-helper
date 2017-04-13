@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # pip install pytelegrambotapi
+# pip install paste
+# ps ax|grep traffic-hel[p]er|awk '{print $1}'|while read -r line;do kill -9 $line;done
 
 import os
 import threading
@@ -39,7 +41,7 @@ config.read((configFile))
 log = logger.getLogger("traffic-helper-service")
 host = "http://traffic22.ru/php"
 
-telegramToken = config.get("TELEGRAM", "token") 
+telegramToken = config.get("TELEGRAM", "token")
 ownId = config.getint("TELEGRAM", "own_id")
 bot = telebot.TeleBot(telegramToken)
 
