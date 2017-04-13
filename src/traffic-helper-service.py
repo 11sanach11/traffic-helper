@@ -39,7 +39,7 @@ config.read((configFile))
 log = logger.getLogger("traffic-helper-service")
 host = "http://traffic22.ru/php"
 
-telegramToken = config.get("TELEGRAM", "token")
+telegramToken = config.get("TELEGRAM", "token") 
 ownId = config.getint("TELEGRAM", "own_id")
 bot = telebot.TeleBot(telegramToken)
 
