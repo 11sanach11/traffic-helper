@@ -165,24 +165,25 @@ def bootleLogger(func):
 
 
 @bot.message_handler(content_types=["text"])
-def repeat_all_messages(message):  # Название функции не играет никакой роли, в принципе
+def sendTramInfo(message):
     log.info(u"Request: %s", message)
     if message.chat.id != ownId:
         bot.send_message(message.chat.id, "Sorry, it's private party...")
     else:
-        bot.send_message(message.chat.id, isAvaliable())
+        bot.send_message(message.chat.id, isAvaliable().replace("<pre>", "").replace("</pre>", ""))
 
 
 def run_telegram():
     try:
         bot.polling(none_stop=True)
-    except Exception,e:
+    except Exception, e:
         log.error("Error while exec: %s", e.message)
         log.exception("Exeptiong while exec: ")
         time.sleep(10)
         telegram_thread = threading.Thread(target=run_telegram)
         telegram_thread.setDaemon(True)
         telegram_thread.start()
+
 
 def run_http():
     try:
@@ -194,6 +195,7 @@ def run_http():
         http_thread = threading.Thread(target=run_http)
         http_thread.setDaemon(True)
         http_thread.start()
+
 
 if __name__ == '__main__':
     install(bootleLogger)
