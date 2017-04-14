@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # pip install pytelegrambotapi
+# pip install paste
+# ps ax|grep traffic-hel[p]er|awk '{print $1}'|while read -r line;do kill -9 $line;done
 
 import os
 import threading
@@ -163,12 +165,12 @@ def bootleLogger(func):
 
 
 @bot.message_handler(content_types=["text"])
-def repeat_all_messages(message):  # Название функции не играет никакой роли, в принципе
+def sendTramInfo(message):
     log.info(u"Request: %s", message)
     if message.chat.id != ownId:
         bot.send_message(message.chat.id, "Sorry, it's private party...")
     else:
-        bot.send_message(message.chat.id, isAvaliable())
+        bot.send_message(message.chat.id, isAvaliable().replace("<pre>", "").replace("</pre>", ""))
 
 
 def run_telegram():
@@ -176,7 +178,7 @@ def run_telegram():
         bot.polling(none_stop=True)
     except Exception,e:
         log.error("Error while exec: %s", e.message)
-        log.exception("Exeptiong while exec: ")
+        log.exception("Exeption while exec: ")
         time.sleep(10)
         telegram_thread = threading.Thread(target=run_telegram)
         telegram_thread.setDaemon(True)
@@ -207,5 +209,4 @@ if __name__ == '__main__':
     telegram_thread = threading.Thread(target=run_telegram)
     telegram_thread.setDaemon(True)
     telegram_thread.start()
-
     time.sleep(999999999999)
