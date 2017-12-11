@@ -47,11 +47,13 @@ bot = telebot.TeleBot(telegramToken)
 
 
 class TrafficClient:
+    cookies = dict(PHPSESSID='')
+
     def __int__(self):
         pass
 
     def getAllRoutes(self):
-        routes = r.get("%s/getRoutes.php" % host, params={"city": "barnaul"}, timeout=3)
+        routes = r.get("%s/getRoutes.php" % host, params={"city": "barnaul"}, timeout=3, cookies=self.cookies)
         if routes.status_code == 200:
             return routes.json()
         else:
@@ -59,21 +61,22 @@ class TrafficClient:
 
     def getVehiclesForRoute(self, routeIds):
         vehicles = r.get("%s/getVehiclesMarkers.php" % host,
-                         params={"rids": routeIds, "lat0": 0, "lat1": 90, "lng0": 0, "lng1": 90, "city": "barnaul", "curk": 0}, timeout=3)
+                         params={"rids": routeIds, "lat0": 0, "lat1": 90, "lng0": 0, "lng1": 90, "city": "barnaul", "curk": 0}, timeout=3, cookies=self.cookies)
         if vehicles.status_code == 200:
             return vehicles.json()
         else:
             raise Exception("Can't get vehicle info: %s (status %s)" % (vehicles.content, vehicles.status_code))
 
     def getVehicleForecasts(self, vehicleId, type):
-        vehicleForecasts = r.get("%s/getVehicleForecasts.php" % host, params={"vid": vehicleId, "type": type, "city": "barnaul"}, timeout=3)
+        vehicleForecasts = r.get("%s/getVehicleForecasts.php" % host, params={"vid": vehicleId, "type": type, "city": "barnaul"}, timeout=3,
+                                 cookies=self.cookies)
         if vehicleForecasts.status_code == 200:
             return vehicleForecasts.json()
         else:
             raise Exception("Can't get vehicle info: %s (status %s)" % (vehicleForecasts.content, vehicleForecasts.status_code))
 
     def getAllStations(self):
-        stations = r.get("%s/getStations.php" % host, params={"city": "barnaul"}, timeout=3)
+        stations = r.get("%s/getStations.php" % host, params={"city": "barnaul"}, timeout=3, cookies=self.cookies)
         if stations.status_code == 200:
             return stations.json()
         else:
@@ -125,7 +128,7 @@ def getTrumInfo(type, myStationId, myStationEndId, goutStationId, goutStationEnd
                         "time": myStation[u"arrt"],
                         "message": u"%s №%s будет на нужной остановке через %s минут в %s" % (
                             vehs.get(u"rtype"), vehs.get(u"rnum"), myStation.get(u"arrt", 0) / 60, (
-                                datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt", 0))).strftime("%H:%M:%S"))
+                                    datetime.datetime.now() + datetime.timedelta(seconds=myStation.get(u"arrt", 0))).strftime("%H:%M:%S"))
                     })
 
     return result
@@ -176,7 +179,7 @@ def sendTramInfo(message):
 def run_telegram():
     try:
         bot.polling(none_stop=True)
-    except Exception,e:
+    except Exception, e:
         log.error("Error while exec: %s", e.message)
         log.exception("Exeption while exec: ")
         time.sleep(10)
@@ -184,16 +187,19 @@ def run_telegram():
         telegram_thread.setDaemon(True)
         telegram_thread.start()
 
+
 def run_http():
     try:
+        # run(host="0.0.0.0", port=port)
         run(server="paste", host="0.0.0.0", port=port)
     except Exception, e:
         log.error("Error while exec: %s", e.message)
-        log.exception("Exeptiong while exec: ")
+        log.exception("Exeption while exec: ")
         time.sleep(10)
         http_thread = threading.Thread(target=run_http)
         http_thread.setDaemon(True)
         http_thread.start()
+
 
 if __name__ == '__main__':
     install(bootleLogger)
