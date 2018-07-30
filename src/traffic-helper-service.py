@@ -136,7 +136,7 @@ def getTrumInfo(type, myStationId, myStationEndId, goutStationId, goutStationEnd
 
 @route("/tram_info/morning")
 def getTramOnMorning():
-    tramInfo = getTrumInfo(type=u"Тр", myStationId=u"126", myStationEndId=u"59", goutStationId=u"132", goutStationEndId=u"59")
+    tramInfo = getTrumInfo(type=u"Тр", myStationId=u"24", myStationEndId=u"59", goutStationId=u"25", goutStationEndId=u"59")
     return "\n".join(map(lambda x: "<pre>" + x["message"] + "</pre>", sorted(tramInfo, key=lambda x: x["time"])))
 
 
